@@ -1,140 +1,193 @@
-#include <iostream> // Підключення бібліотеки для вводу/виводу (наприклад, std::cout, std::cin) (Connecting library for input/output (e.g., std::cout, std::cin))
-#include <string>   // Підключення бібліотеки для роботи з рядками (std::string) (Connecting library for working with strings (std::string))
-#include <vector>   // Підключення бібліотеки для роботи з динамічними масивами (векторами) (Connecting library for working with dynamic arrays (vectors))
-#include <sstream>  // Підключення бібліотеки для роботи з рядковими потоками (для парсингу) (Connecting library for working with string streams (for parsing))
-#include <map>      // Підключення бібліотеки для роботи зі словниками (асоціативними масивами) (Connecting library for working with maps (associative arrays))
+#include <string>   // Подключаем библиотеку для работы со строками (клас std::string)
+#include <iostream> // Подключаем библиотеку для ввода/вывода (std::cin, std::cout)
 
-// Функція для розділення рядка за заданим роздільником
-// Function to split a string by a given delimiter
-std::vector<std::string> split(const std::string& s, char delimiter) {
-   std::vector<std::string> tokens; // Вектор для зберігання отриманих частин рядка (Vector to store the obtained parts of the string)
-   std::string token; // Тимчасовий рядок для зберігання однієї частини (Temporary string to store one part)
-   std::istringstream tokenStream(s); // Створення рядкового потоку з вхідного рядка (Creating a string stream from the input string)
-   // Цикл для читання частин рядка до роздільника (Loop to read parts of the string up to the delimiter)
-   while (std::getline(tokenStream, token, delimiter)) {
-      tokens.push_back(token); // Додавання отриманої частини до вектору (Adding the obtained part to the vector)
-   }
-   return tokens; // Повернення вектору з частинами рядка (Returning the vector with parts of the string)
+// --- Вспомогательная функция для удаления пробелов в начале и конце строки ---
+// Эта функция принимает строку и возвращает новую строку без лишних пробелов по краям.
+std::string manual_trim(const std::string& str) { // Объявляем функцию manual_trim, принимающую константную ссылку на строку str
+    if (str.empty()) {                          // Проверяем, не пустая ли строка
+        return "";                              // Если строка пустая, возвращаем пустую строку
+    }
+    size_t first = 0;                           // Создаем переменную first (индекс первого символа) и инициализируем нулем
+
+    // Ищем индекс первого символа, который не является пробелом или табуляцией
+    // std::string::length() - возвращает длину строки (количество символов)
+    while (first < str.length() && (str[first] == ' ' || str[first] == '\t')) { // Цикл: пока first меньше длины строки И символ str[first] - это пробел ИЛИ табуляция
+        first++;                                // Увеличиваем first на 1, переходя к следующему символу
+    }
+
+    // Если вся строка состояла из пробелов, first станет равен длине строки
+    if (first == str.length()) {                // Проверяем, дошли ли мы до конца строки, не найдя непробельных символов
+        return "";                              // Если да, значит строка была пустой или из одних пробелов, возвращаем пустую строку
+    }
+
+    size_t last = str.length() - 1;             // Создаем переменную last (индекс последнего символа) и инициализируем последним индексом строки
+
+    // Ищем индекс последнего символа, который не является пробелом или табуляцией (двигаясь с конца)
+    // Условие last > first важно, чтобы индексы не "пересеклись", если непробельный символ всего один
+    while (last > first && (str[last] == ' ' || str[last] == '\t')) { // Цикл: пока last больше first И символ str[last] - это пробел ИЛИ табуляция
+        last--;                                 // Уменьшаем last на 1, переходя к предыдущему символу
+    }
+
+    // std::string::substr(pos, count) - возвращает подстроку, начиная с индекса pos длиной count символов.
+    // Здесь мы вырезаем часть строки от первого непробельного символа (first) до последнего (last).
+    // Длина подстроки вычисляется как (last - first + 1).
+    return str.substr(first, last - first + 1); // Возвращаем подстроку от first до last включительно
 }
 
-int main() {
-    // --- Читання вхідних даних --- (Reading input data)
-    std::string values_line; // Рядок для зберігання першого рядка вводу (пар ім'я-значення) (String to store the first input line (name-value pairs))
-    // Читання першого рядка цілком (включно з пробілами) (Reading the first line entirely (including spaces))
-    std::getline(std::cin, values_line);
+// --- Вспомогательная функция для поиска значения по ключу в строке пар "ключ-значение" ---
+// Эта функция ищет ключ key_to_find в строке values_line, которая содержит пары вида "ключ=значение" или "ключ-значение", разделенные запятыми.
+// Она возвращает найденное значение (уже "оттримленное").
+// Параметр found (передается по ссылке) устанавливается в true, если ключ был найден, иначе остается false.
+std::string find_value_manually(const std::string& values_line, // Входная строка с парами ключ-значение
+                                const std::string& key_to_find, // Ключ, который мы ищем
+                                bool& found)                   // Флаг (передается по ссылке), указывающий, найден ли ключ
+{
+    size_t current_pos = 0;                      // Индекс, с которого начинаем поиск следующей пары (изначально 0)
+    found = false;                               // Сбрасываем флаг "найдено" в false перед началом поиска
 
-    std::string template_str; // Рядок для зберігання другого рядка вводу (шаблону) (String to store the second input line (the template))
-    // Читання другого рядка цілком (Reading the second line entirely)
-    std::getline(std::cin, template_str);
+    // Цикл продолжается, пока мы не обработаем всю строку values_line
+    while (current_pos < values_line.length()) { // Пока текущая позиция меньше длины строки
 
-    // --- Обробка пар ім'я-значення --- (Processing name-value pairs)
-    std::map<std::string, std::string> values_map; // Створення словника (map) для зберігання пар ім'я-значення (Creating a map to store name-value pairs)
-    // Розділення першого рядка на окремі пари за допомогою коми (Splitting the first line into individual pairs using a comma)
-    std::vector<std::string> pairs = split(values_line, ',');
+        // --- Ищем конец текущей пары (запятую или конец строки) ---
+        // std::string::find(char, pos) - ищет первое вхождение символа char, начиная с позиции pos.
+        // Возвращает индекс найденного символа или специальное значение std::string::npos, если символ не найден.
+        size_t comma_pos = values_line.find(',', current_pos); // Ищем запятую, начиная с current_pos
 
-    // Цикл для обробки кожної пари (Loop to process each pair)
-    for (const std::string& pair_str : pairs) {
-        size_t separator_pos = std::string::npos; // Позиція роздільника ('-' або '=') (Position of the separator ('-' or '='))
-        // Спочатку шукаємо роздільник '-' (First, search for the '-' separator)
-        separator_pos = pair_str.find('-');
-        // Якщо '-' не знайдено, шукаємо роздільник '=' (If '-' is not found, search for the '=' separator)
-        if (separator_pos == std::string::npos) {
-            separator_pos = pair_str.find('=');
+        if (comma_pos == std::string::npos) {   // Если запятая не найдена (find вернул npos)
+            comma_pos = values_line.length();   // Считаем концом пары конец всей строки values_line
         }
 
-        // Перевірка, чи знайдено роздільник (Checking if a separator was found)
-        if (separator_pos != std::string::npos) {
-            // Виділення імені (частина рядка до роздільника) (Extracting the name (part of the string before the separator))
-            std::string name = pair_str.substr(0, separator_pos);
-            // Виділення значення (частина рядка після роздільника) (Extracting the value (part of the string after the separator))
-            std::string value = pair_str.substr(separator_pos + 1);
+        // --- Извлекаем подстроку, содержащую текущую пару ---
+        // std::string::substr(pos, count) - извлекает подстроку с индекса pos длиной count.
+        std::string pair_str = values_line.substr(current_pos, comma_pos - current_pos); // Вырезаем подстроку от current_pos до comma_pos
 
-            // --- Видалення зайвих пробілів (необов'язково, але корисно) --- (Removing extra spaces (optional, but useful))
-            // Пошук першого символу, який не є пробілом (Finding the first non-space character)
-            size_t first_char = name.find_first_not_of(" \t");
-            // Якщо такі символи є, видаляємо пробіли на початку (If such characters exist, remove leading spaces)
-            if (std::string::npos != first_char) {
-                name = name.substr(first_char);
-            }
-             // Пошук останнього символу, який не є пробілом (Finding the last non-space character)
-            size_t last_char = name.find_last_not_of(" \t");
-             // Якщо такі символи є, видаляємо пробіли в кінці (If such characters exist, remove trailing spaces)
-            if (std::string::npos != last_char) {
-                name = name.substr(0, last_char + 1);
-            }
-            // Повторюємо для значення (Repeat for the value)
-            first_char = value.find_first_not_of(" \t");
-            if (std::string::npos != first_char) {
-                value = value.substr(first_char);
-            }
-            last_char = value.find_last_not_of(" \t");
-            if (std::string::npos != last_char) {
-                value = value.substr(0, last_char + 1);
-            }
-            // --- Кінець видалення пробілів --- (End of space removal)
+        // --- Ищем разделитель ('-' или '=') внутри извлеченной пары ---
+        size_t sep_pos = std::string::npos;     // Инициализируем позицию разделителя как "не найдено" (npos)
+        // Ищем '-' в подстроке pair_str, начиная с индекса 0
+        size_t dash_pos = pair_str.find('-');
+        // Ищем '=' в подстроке pair_str, начиная с индекса 0
+        size_t equals_pos = pair_str.find('=');
 
-            // Додавання пари ім'я-значення до словника (Adding the name-value pair to the map)
-            values_map[name] = value;
+        // Определяем реальную позицию разделителя (берем тот, что раньше, если есть оба)
+        if (dash_pos != std::string::npos && equals_pos != std::string::npos) { // Если найдены и '-' и '='
+            sep_pos = (dash_pos < equals_pos) ? dash_pos : equals_pos; // Выбираем тот, который находится левее (меньший индекс)
+        } else if (dash_pos != std::string::npos) { // Если найден только '-'
+            sep_pos = dash_pos;                 // Используем позицию '-'
+        } else {                                // Иначе (если найден только '=' или ни один не найден)
+            sep_pos = equals_pos;               // Используем позицию '=' (может быть npos, если и его нет)
         }
-        // Якщо роздільник не знайдено в парі, ігноруємо цю пару (If the separator is not found in the pair, ignore this pair)
+
+        // --- Если разделитель найден, извлекаем ключ и значение ---
+        if (sep_pos != std::string::npos) {     // Проверяем, был ли найден разделитель ('-' или '=')
+            // Извлекаем ключ: подстрока от начала pair_str до разделителя sep_pos
+            std::string current_key_raw = pair_str.substr(0, sep_pos);
+            // Извлекаем значение: подстрока от символа ПОСЛЕ разделителя (sep_pos + 1) до конца pair_str
+            std::string current_value_raw = pair_str.substr(sep_pos + 1);
+
+            // Очищаем ключ и значение от лишних пробелов с помощью нашей функции manual_trim
+            std::string current_key = manual_trim(current_key_raw);
+            std::string current_value = manual_trim(current_value_raw);
+
+            // --- Сравниваем найденный ключ с тем, который мы ищем ---
+            // Проверяем, что ключ не пустой после очистки И он совпадает с искомым key_to_find
+            if (!current_key.empty() && current_key == key_to_find) {
+                found = true;                   // Устанавливаем флаг "найдено" в true
+                return current_value;           // Возвращаем найденное и очищенное значение (и выходим из функции)
+            }
+        }
+
+        // --- Переходим к началу следующей пары ---
+        current_pos = comma_pos + 1;             // Устанавливаем текущую позицию на символ после найденной запятой
+
+        // Пропускаем возможные пробелы после запятой, чтобы следующая итерация началась с символа пары
+        while (current_pos < values_line.length() && values_line[current_pos] == ' ') { // Пока не конец строки и текущий символ пробел
+             current_pos++;                      // Передвигаем позицию вперед
+        }
     }
 
-    // --- Заповнення шаблону --- (Filling the template)
-    std::string result = ""; // Рядок для формування кінцевого результату (String to build the final result)
-    size_t current_pos = 0; // Поточна позиція для обробки рядка шаблону (Current position for processing the template string)
+    // Если мы прошли весь цикл и не вышли из функции раньше (через return), значит ключ не был найден
+    return "";                                   // Возвращаем пустую строку, так как значение не найдено (found останется false)
+}
 
-    // Цикл обробки рядка шаблону (Loop for processing the template string)
-    while (current_pos < template_str.length()) {
-        // Пошук позиції наступної відкриваючої дужки '[' починаючи з поточної позиції (Finding the position of the next opening bracket '[' starting from the current position)
+
+// --- Основная функция программы ---
+int main() {
+    std::string values_line;                     // Объявляем строку для хранения первой строки ввода (пары ключ-значение)
+    // std::getline(std::cin, str) - читает всю строку из стандартного ввода (cin) до символа новой строки '\n' и сохраняет ее в строку str.
+    std::getline(std::cin, values_line);         // Читаем первую строку ввода
+
+    std::string template_str;                    // Объявляем строку для хранения второй строки ввода (шаблона)
+    std::getline(std::cin, template_str);        // Читаем вторую строку ввода
+
+    std::string result = "";                     // Объявляем строку для формирования итогового результата, инициализируем пустой строкой
+    size_t current_pos = 0;                      // Индекс в строке шаблона, с которого начинаем обработку на каждой итерации
+
+    // --- Цикл обработки строки шаблона ---
+    while (current_pos < template_str.length()) { // Пока текущая позиция меньше длины шаблона
+
+        // --- Ищем следующую открывающую квадратную скобку '[' ---
+        // template_str.find('[', current_pos) - ищет '[' начиная с позиции current_pos
         size_t open_bracket_pos = template_str.find('[', current_pos);
 
-        // Якщо відкриваючу дужку не знайдено до кінця рядка (If the opening bracket is not found until the end of the string)
-        if (open_bracket_pos == std::string::npos) {
-            // Додати залишок рядка шаблону до результату (Append the remainder of the template string to the result)
-            result += template_str.substr(current_pos);
-            // Завершити цикл (Terminate the loop)
-            break;
-        } else {
-             // Додати текст, що знаходиться перед відкриваючою дужкою, до результату (Append the text located before the opening bracket to the result)
-            result += template_str.substr(current_pos, open_bracket_pos - current_pos);
+        // --- Если '[' не найдена ---
+        if (open_bracket_pos == std::string::npos) { // Проверяем, вернул ли find значение npos (не найдено)
+            // Добавляем оставшуюся часть шаблона к результату
+            // template_str.substr(current_pos) - возвращает подстроку от current_pos до конца строки
+            result += template_str.substr(current_pos); // Дописываем хвост шаблона в результат
+            break;                                  // Выходим из цикла while, так как больше плейсхолдеров нет
+        }
+        // --- Если '[' найдена ---
+        else {
+            // --- Добавляем текст перед '[' к результату ---
+            // template_str.substr(current_pos, count) - возвращает подстроку от current_pos длиной count символов
+            // Длина текста перед скобкой: open_bracket_pos - current_pos
+            result += template_str.substr(current_pos, open_bracket_pos - current_pos); // Дописываем текст до '['
 
-            // Пошук позиції відповідної закриваючої дужки ']' після відкриваючої (Finding the position of the corresponding closing bracket ']' after the opening one)
+            // --- Ищем соответствующую закрывающую скобку ']' ---
+            // template_str.find(']', pos) - ищет ']' начиная с позиции pos.
+            // Ищем ПОСЛЕ открывающей скобки, поэтому начинаем с open_bracket_pos + 1
             size_t close_bracket_pos = template_str.find(']', open_bracket_pos + 1);
 
-            // Якщо закриваючу дужку не знайдено (If the closing bracket is not found)
-            if (close_bracket_pos == std::string::npos) {
-                // Вважаємо відкриваючу дужку звичайним символом і додаємо її до результату (Consider the opening bracket as a regular character and add it to the result)
-                result += '[';
-                // Оновлюємо поточну позицію, щоб продовжити пошук після цієї дужки (Update the current position to continue searching after this bracket)
-                current_pos = open_bracket_pos + 1;
-            } else {
-                // Якщо знайдено обидві дужки - виділяємо ім'я плейсхолдера (If both brackets are found - extract the placeholder name)
+            // --- Если ']' не найдена после '[' ---
+            if (close_bracket_pos == std::string::npos) { // Проверяем, найдена ли закрывающая скобка
+                // Считаем '[' обычным символом и добавляем его к результату
+                result += '[';                      // Добавляем сам символ '[' в результат
+                // Обновляем текущую позицию, чтобы продолжить поиск ПОСЛЕ этого символа '['
+                current_pos = open_bracket_pos + 1; // Передвигаем позицию за обработанный '['
+            }
+            // --- Если найдены и '[' и ']' ---
+            else {
+                // --- Извлекаем имя плейсхолдера (текст между скобками) ---
+                // Длина имени: close_bracket_pos - (open_bracket_pos + 1)
+                //               = close_bracket_pos - open_bracket_pos - 1
                 std::string placeholder_name = template_str.substr(open_bracket_pos + 1, close_bracket_pos - open_bracket_pos - 1);
 
-                // Пошук імені плейсхолдера у словнику значень (Searching for the placeholder name in the values map)
-                // values_map.find() повертає ітератор на елемент, якщо знайдено, або values_map.end(), якщо не знайдено (values_map.find() returns an iterator to the element if found, or values_map.end() if not found)
-                auto it = values_map.find(placeholder_name);
+                // --- Ищем значение для этого плейсхолдера в строке values_line ---
+                bool key_was_found = false;         // Флаг для функции find_value_manually
+                // Вызываем нашу вспомогательную функцию для поиска значения
+                std::string value_to_insert = find_value_manually(values_line, placeholder_name, key_was_found);
 
-                // Перевірка, чи знайдено ім'я у словнику (Checking if the name was found in the map)
-                if (it != values_map.end()) {
-                    // Якщо знайдено, додати відповідне значення (з словника) до результату (If found, append the corresponding value (from the map) to the result)
-                    // it->second - це значення, що відповідає ключу (it->second is the value corresponding to the key)
-                    result += it->second;
-                } else {
-                    // Якщо ім'я НЕ знайдено у словнику (If the name is NOT found in the map)
-                    // Додати оригінальний плейсхолдер (включно з дужками) до результату (Append the original placeholder (including brackets) to the result)
-                     result += template_str.substr(open_bracket_pos, close_bracket_pos - open_bracket_pos + 1);
+                // --- Добавляем значение или сам плейсхолдер в результат ---
+                if (key_was_found) {                // Если функция поиска установила флаг found в true
+                    result += value_to_insert;      // Добавляем найденное значение в результат
+                } else {                            // Если ключ не был найден
+                    // Добавляем оригинальный плейсхолдер (включая скобки) обратно в результат
+                    // template_str.substr(pos, count) - извлекаем подстроку от '[' до ']' включительно
+                    // Длина: close_bracket_pos - open_bracket_pos + 1
+                    result += template_str.substr(open_bracket_pos, close_bracket_pos - open_bracket_pos + 1);
                 }
-                // Оновлюємо поточну позицію, щоб продовжити пошук після обробленого плейсхолдера (Update the current position to continue searching after the processed placeholder)
-                current_pos = close_bracket_pos + 1;
+
+                // --- Обновляем текущую позицию для следующей итерации ---
+                // Устанавливаем позицию на символ ПОСЛЕ закрывающей скобки ']'
+                current_pos = close_bracket_pos + 1; // Передвигаем позицию за обработанный плейсхолдер
             }
         }
     }
 
-    // --- Виведення результату --- (Printing the result)
-    // Виведення кінцевого рядка з переведенням на новий рядок (Printing the final string followed by a newline)
-    std::cout << result << std::endl; // std::endl також очищує буфер виводу (std::endl also flushes the output buffer)
+    // --- Вывод результата ---
+    // std::cout << ... - выводит данные в стандартный вывод (консоль)
+    // std::endl - выводит символ новой строки и сбрасывает буфер вывода (гарантирует, что все будет выведено сразу)
+    std::cout << result << std::endl;           // Печатаем итоговую строку в консоль
 
-    // Повернення 0 означає успішне завершення програми (Returning 0 indicates successful program termination)
-    return 0;
+    return 0;                                    // Возвращаем 0 из main, что означает успешное завершение программы
 }
